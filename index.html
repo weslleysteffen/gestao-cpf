@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestão de CPFs</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0f0f0f;--bg2:#1a1a1a;--bg3:#222;
+  --border:#2e2e2e;--border2:#3a3a3a;
+  --text:#f0f0f0;--text2:#999;--text3:#555;
+  --amber:#fbbf24;--amber-bg:rgba(251,191,36,.1);
+  --green:#4ade80;--green-bg:rgba(74,222,128,.1);
+  --blue:#60a5fa;--blue-bg:rgba(96,165,250,.1);
+  --red:#f87171;--red-bg:rgba(248,113,113,.1);
+  --purple-bg:rgba(167,139,250,.1);
+  --orange-bg:rgba(251,146,60,.08);--orange:#fb923c;
+  --r:8px;--rs:5px;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;}
+.app{max-width:1280px;margin:0 auto;padding:1.25rem;}
+.pg{display:none;}.pg.on{display:block;}
+.nav{display:flex;border-bottom:1px solid var(--border);margin-bottom:1.5rem;flex-wrap:wrap;}
+.nb{padding:10px 18px;font-size:13px;cursor:pointer;border:none;background:none;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;}
+.nb.on{color:var(--text);border-bottom-color:var(--amber);font-weight:600;}
+.nb:hover:not(.on){color:var(--text);}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(82px,1fr));gap:8px;margin-bottom:1.25rem;}
+.mc{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:.75rem 1rem;cursor:pointer;}
+.mc:hover,.mc.ativo{border-color:var(--amber);}
+.ml{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
+.mv{font-size:20px;font-weight:700;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:12px;}
+.cp{padding:1rem 1.25rem;}
+.stitle{font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;}
+table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;}
+th{text-align:left;padding:7px 10px;font-size:10px;font-weight:600;color:var(--text3);border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.05em;}
+td{padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,.02);}
+tr.rtop td{background:rgba(251,191,36,.07);}
+tr.rpm td{opacity:.6;}
+tr.rrec td{background:rgba(248,113,113,.06);}
+tr.rdup td{background:rgba(251,146,60,.06);}
+td.cpfm{font-family:'Courier New',monospace;font-size:11px;color:#a78bfa;overflow:visible;white-space:nowrap;}
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600;white-space:nowrap;}
+.bo{background:var(--green-bg);color:var(--green);}
+.bb{background:var(--blue-bg);color:var(--blue);}
+.br{background:var(--red-bg);color:var(--red);}
+.sc{background:var(--blue-bg);color:var(--blue);}
+.sp{background:var(--purple-bg);color:#a78bfa;}
+.sa{background:var(--green-bg);color:var(--green);}
+.sco{background:var(--amber-bg);color:var(--amber);}
+.sr{background:var(--red-bg);color:var(--red);}
+.spe{background:var(--red-bg);color:#f43f5e;}
+.sv{background:var(--green-bg);color:#22c55e;}
+.srec{background:var(--red-bg);color:var(--red);border:1px solid rgba(248,113,113,.3);}
+.sdup{background:var(--orange-bg);color:var(--orange);border:1px solid rgba(251,146,60,.3);}
+.dbadge{display:inline-block;padding:1px 5px;border-radius:4px;font-size:10px;background:var(--amber-bg);color:var(--amber);margin-left:3px;}
+.rn{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:10px;font-weight:700;}
+.r1{background:#fbbf24;color:#000;}.r2{background:#9ca3af;color:#000;}.r3{background:#cd7c5e;color:#000;}.rx{background:var(--bg3);color:var(--text2);}
+.av{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#1e1b4b;color:#a78bfa;font-size:12px;font-weight:700;flex-shrink:0;}
+.cor-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:1.5rem;}
+.cor-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:.875rem;cursor:pointer;display:flex;align-items:center;gap:10px;}
+.cor-card:hover{border-color:var(--border2);}
+.subtabs{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap;}
+.st{padding:5px 12px;font-size:12px;border-radius:var(--rs);border:1px solid var(--border);cursor:pointer;background:transparent;color:var(--text2);}
+.st.on{background:var(--amber);color:#000;border-color:var(--amber);font-weight:600;}
+.al{padding:10px 14px;border-radius:var(--rs);font-size:12px;margin-bottom:10px;}
+.aw{background:var(--amber-bg);border:1px solid rgba(251,191,36,.3);color:var(--amber);}
+.ai{background:var(--blue-bg);border:1px solid rgba(96,165,250,.2);color:var(--blue);}
+.ag{background:var(--green-bg);border:1px solid rgba(74,222,128,.2);color:var(--green);}
+.ae{background:var(--red-bg);border:1px solid rgba(248,113,113,.3);color:var(--red);}
+.adup{background:var(--orange-bg);border:1px solid rgba(251,146,60,.3);color:var(--orange);}
+.btn{padding:7px 14px;border-radius:var(--rs);border:1px solid var(--border2);background:transparent;color:var(--text);font-size:12px;cursor:pointer;}
+.btn:hover{background:var(--bg3);}
+.btnp{background:var(--amber);color:#000;border-color:var(--amber);font-weight:600;}
+.btnp:hover{opacity:.85;}
+.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);cursor:pointer;margin-bottom:1rem;border:none;background:none;padding:0;}
+.back:hover{color:var(--text);}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.fg{display:flex;flex-direction:column;gap:5px;}
+.fg label{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
+.fg input,.fg select{padding:8px 10px;font-size:13px;border:1px solid var(--border2);border-radius:var(--rs);background:var(--bg3);color:var(--text);}
+.ist{border:1px solid var(--border);background:var(--bg3);font-size:11px;cursor:pointer;color:var(--text);padding:3px 6px;border-radius:var(--rs);max-width:120px;}
+.drop{border:1.5px dashed var(--border2);border-radius:var(--r);padding:2rem;text-align:center;cursor:pointer;}
+.drop:hover{background:var(--bg3);}
+.fbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;align-items:center;}
+.fbar input{padding:5px 10px;font-size:12px;border:1px solid var(--border);border-radius:var(--rs);background:var(--bg3);color:var(--text);}
+.chip{padding:4px 10px;font-size:11px;border-radius:99px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;}
+.chip.on{background:var(--amber);color:#000;border-color:var(--amber);font-weight:600;}
+.sep{margin:1.25rem 0 .75rem;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);padding-bottom:6px;}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;display:flex;align-items:center;justify-content:center;}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:1.5rem;max-width:420px;width:90%;}
+.modal h3{font-size:15px;font-weight:700;margin-bottom:.75rem;}
+.modal p{font-size:13px;color:var(--text2);margin-bottom:.75rem;line-height:1.55;}
+.btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:1rem;}
+.cob-cell{display:flex;flex-direction:column;gap:3px;}
+.cob-row{display:flex;align-items:center;gap:4px;font-size:10px;white-space:nowrap;}
+.cob-icon{width:14px;text-align:center;flex-shrink:0;}
+.cob-label{color:var(--text3);font-size:9px;text-transform:uppercase;width:38px;flex-shrink:0;}
+.cob-val{font-size:11px;font-weight:500;}
+.cob-venc{color:var(--amber);}
+.cob-ok{color:var(--text2);}
+hr.cdiv{border:none;border-top:1px solid var(--border);margin:2px 0;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="nav" id="nav"></div>
+  <div id="pg-home" class="pg on"></div>
+  <div id="pg-cor" class="pg"></div>
+  <div id="pg-vend" class="pg"></div>
+  <div id="pg-imp" class="pg"></div>
+  <div id="pg-cfg" class="pg"></div>
+</div>
+<div id="mroot"></div>
+<script>
+
+const FFIX=new Set(['01-01','04-21','05-01','09-07','10-12','11-02','11-15','11-20','12-25','01-20','04-08','07-25','09-08','09-27']);
+const _mv={};
+function fMov(ano){
+  const a=ano%19,b=Math.floor(ano/100),c=ano%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3);
+  const h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451);
+  const mes=Math.floor((h+l-7*m+114)/31),dia=((h+l-7*m+114)%31)+1;
+  const p=new Date(ano,mes-1,dia),fmt=x=>x.toISOString().slice(5,10),add=(x,n)=>{const t=new Date(x);t.setDate(t.getDate()+n);return t;};
+  return new Set([fmt(add(p,-48)),fmt(add(p,-47)),fmt(add(p,-2)),fmt(p),fmt(add(p,60))]);
+}
+function isFer(s){const[y,m,d]=s.split('-');const md=m+'-'+d;if(FFIX.has(md))return true;if(!_mv[y])_mv[y]=fMov(+y);return _mv[y].has(md);}
+function pdu(s){let dt=new Date(s+'T12:00:00');for(let i=0;i<30;i++){const iso=dt.toISOString().slice(0,10);if(dt.getDay()!==0&&dt.getDay()!==6&&!isFer(iso))return iso;dt.setDate(dt.getDate()+1);}return s;}
+function pduA(s,n){const dt=new Date(s+'T12:00:00');dt.setDate(dt.getDate()+n);return pdu(dt.toISOString().slice(0,10));}
+function ipm(s){const[y,m]=s.split('-').map(Number);const nm=m===12?1:m+1,ny=m===12?y+1:y;return pdu(`${ny}-${String(nm).padStart(2,'0')}-01`);}
+const CORS=['Ana Karoline','Brenno','Cleide','Felipe','Gabriel','Lucas','Thaiany','Weslley','Yuri'];
+const SEED=[{"id":2000,"nome":"Edvair João Da Silva","cpf":"063.420.551-06","corretor":"Ana Karoline","valor":400,"classe":"bom","data":"2025-04-29","obs":"mais de R$ 400,00 de divida","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2001,"nome":"Thiado Da Silva Rodrigues","cpf":"053.646.181-37","corretor":"Ana Karoline","valor":1400,"classe":"ruim","data":"2025-04-29","obs":"mais de R$ 1.400,00 de divida","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2002,"nome":"Gerlecy Do Carmo Ramos Silva","cpf":"006.691.411-60","corretor":"Ana Karoline","valor":503,"classe":"bom","data":"2025-04-29","obs":"R$ 503 de divida","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2003,"nome":"Alex Junior Correia Campos","cpf":"715.874.391-82","corretor":"Ana Karoline","valor":4000,"classe":"ruim","data":"2025-04-29","obs":"mais de R$ 4.000,00 de divida","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2004,"nome":"Oriana Yoselin Rojas Alvarado","cpf":"718.738.031-33","corretor":"Ana Karoline","valor":0,"classe":"otimo","data":"2025-04-29","obs":"nome limpo","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2005,"nome":"Xavier Alejandro Garcia Ramirez","cpf":"718.724.791-54","corretor":"Ana Karoline","valor":0,"classe":"otimo","data":"2025-04-29","obs":"nome limpo","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2006,"nome":"Italo Adriano Ramos Da Silva Damasceno","cpf":"070.549.141-20","corretor":"Ana Karoline","valor":0,"classe":"otimo","data":"2025-04-29","obs":"nome limpo","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2007,"nome":"Simone Marcely Costa Campos","cpf":"072.809.441-08","corretor":"Brenno","valor":0,"classe":"otimo","data":"2025-04-29","obs":"nome limpo","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2008,"nome":"Taynara Thamirys Da Silva Oliveira","cpf":"068.899.521-70","corretor":"Brenno","valor":0,"classe":"otimo","data":"2025-04-29","obs":"nome limpo","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2009,"nome":"","cpf":"061.809.461-08","corretor":"Brenno","valor":600,"classe":"bom","data":"2025-04-29","obs":"mais de R$ 600,00 de divida","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2010,"nome":"Aliny Sabrine De Campos Lima Costa","cpf":"061.709.891-30","corretor":"Brenno","valor":0,"classe":"otimo","data":"2025-04-29","obs":"nome limpo","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2011,"nome":"Ana Paula Silva Santos Saminez","cpf":"088.232.363-63","corretor":"Brenno","valor":300,"classe":"bom","data":"2025-04-29","obs":"mais de R$ 300,00 de divida","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2012,"nome":"Vinicios Aparecido De Lima Nascimento","cpf":"062.925.661-61","corretor":"Brenno","valor":9000,"classe":"ruim","data":"2025-04-29","obs":"mais de R$ 9.000,00 de divida","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2013,"nome":"Benedito Sebastião De Toledo","cpf":"018.612.221-73","corretor":"Cleide","valor":1500,"classe":"ruim","data":"2025-04-29","obs":"R$ 1.500 de divida","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2014,"nome":"Poliany Pereira De Oliveira","cpf":"073.950.441-00","corretor":"Lucas","valor":3000,"classe":"ruim","data":"2025-04-29","obs":"R$ 3.000,00 de dividas","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2015,"nome":"Bruno Lucas Pinho Cavalcante","cpf":"051.435.661-85","corretor":"Lucas","valor":1550,"classe":"ruim","data":"2025-04-29","obs":"R$ 1.550,00 de dividas","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2016,"nome":"Karini Vitora Silva De Oliveira","cpf":"075.474.001-32","corretor":"Lucas","valor":560,"classe":"bom","data":"2025-04-29","obs":"R$ 560,00 de divida","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2017,"nome":"Karynne Karollyne De Pinho Gomes E Silva","cpf":"033.977.431-25","corretor":"Lucas","valor":0,"classe":"otimo","data":"2025-04-29","obs":"nome limpo, virou pasta","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2018,"nome":"Ezequiel Leolino De Almeida","cpf":"589.318.608-70","corretor":"Thaiany","valor":0,"classe":"otimo","data":"2025-04-29","obs":"nome limpo","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2019,"nome":"Douglas Ruan Silva Dos Santos","cpf":"077.182.871-30","corretor":"Thaiany","valor":296,"classe":"bom","data":"2025-04-29","obs":"R$ 296,00 de divida","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2020,"nome":"Lizeide Evangelista De Moura","cpf":"486.919.313-00","corretor":"Thaiany","valor":0,"classe":"ruim","data":"2025-04-29","obs":"nome sujo caixa não financia","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2021,"nome":"Flavia Da Silva","cpf":"065.462.201-99","corretor":"Thaiany","valor":1000,"classe":"bom","data":"2025-04-29","obs":"cerca de R$1.000,00 de divida","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2022,"nome":"Emanuelle Da Silva Costa","cpf":"062.533.331-43","corretor":"Thaiany","valor":600,"classe":"bom","data":"2025-04-29","obs":"R$ 600,00 de divida","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2023,"nome":"Sebastiana Maria De Jesus","cpf":"027.505.081-50","corretor":"Thaiany","valor":0,"classe":"otimo","data":"2025-04-29","obs":"nome limpo","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2024,"nome":"Daniele Cristina Cardoso","cpf":"060.152.261-37","corretor":"Thaiany","valor":1800,"classe":"ruim","data":"2025-04-29","obs":"R$ 1.800,00 de divida","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2025,"nome":"Randy Jose Rodrigues Maciel Dos Santos","cpf":"047.003.281-26","corretor":"Thaiany","valor":80,"classe":"bom","data":"2025-04-29","obs":"R$ 80,00 de pendencia","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2026,"nome":"Silbene Conceição Ernestina De Queiroz Pereira","cpf":"964.748.661-87","corretor":"Weslley","valor":0,"classe":"otimo","data":"2025-04-29","obs":"nome limpo","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2027,"nome":"Silracy Jackeline Jesus","cpf":"474.745.645-49","corretor":"Weslley","valor":4000,"classe":"ruim","data":"2025-04-29","obs":"mais de R$ 4.000,00 de dividas","sit":"em_conversa","sitAt":"2025-04-29","cobrarEm":"2025-04-30","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2028,"nome":"Anieli Isabeli Ramos Silva Damasceno","cpf":"080.039.001-66","corretor":"Ana Karoline","valor":0,"classe":"otimo","data":"2025-04-30","obs":"nome limpo","sit":"em_conversa","sitAt":"2025-04-30","cobrarEm":"2025-05-02","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2029,"nome":"Lauristela De Oliveira Silva","cpf":"076.151.761-96","corretor":"Brenno","valor":0,"classe":"otimo","data":"2025-04-30","obs":"nome limpo","sit":"em_conversa","sitAt":"2025-04-30","cobrarEm":"2025-05-02","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2030,"nome":"Izael Cristine De Campos Silva","cpf":"885.882.915-10","corretor":"Brenno","valor":0,"classe":"otimo","data":"2025-04-30","obs":"nome limpo","sit":"em_conversa","sitAt":"2025-04-30","cobrarEm":"2025-05-02","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2031,"nome":"Luiz Antonio Alencar Peixoto","cpf":"062.236.411-17","corretor":"Brenno","valor":3000,"classe":"ruim","data":"2025-04-30","obs":"mais de R$ 3.000,00 em divida","sit":"em_conversa","sitAt":"2025-04-30","cobrarEm":"2025-05-02","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2032,"nome":"Rubiane Silva De Paulo","cpf":"031.564.201-34","corretor":"Brenno","valor":3000,"classe":"ruim","data":"2025-04-30","obs":"mais de R$ 3.000,00 em divida","sit":"em_conversa","sitAt":"2025-04-30","cobrarEm":"2025-05-02","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2033,"nome":"Caio Jose Pires De Oliveira","cpf":"071.774.011-05","corretor":"Brenno","valor":0,"classe":"otimo","data":"2025-04-30","obs":"nome limpo","sit":"em_conversa","sitAt":"2025-04-30","cobrarEm":"2025-05-02","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2034,"nome":"Keny Rafael Romero","cpf":"707.035.422-30","corretor":"Cleide","valor":3000,"classe":"ruim","data":"2025-04-30","obs":"mais de R$ 3.000,00 em divida","sit":"em_conversa","sitAt":"2025-04-30","cobrarEm":"2025-05-02","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2035,"nome":"Francisco Nunes De Almeida","cpf":"057.196.854-64","corretor":"Felipe","valor":0,"classe":"otimo","data":"2025-04-30","obs":"nome limpo","sit":"em_conversa","sitAt":"2025-04-30","cobrarEm":"2025-05-02","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2036,"nome":"Josiane Patricia Da Silva","cpf":"061.780.151-78","corretor":"Felipe","valor":0,"classe":"otimo","data":"2025-04-30","obs":"nome limpo","sit":"em_conversa","sitAt":"2025-04-30","cobrarEm":"2025-05-02","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2037,"nome":"Thays Ramos Da Silva Borges","cpf":"021.260.091-57","corretor":"Felipe","valor":0,"classe":"ruim","data":"2025-04-30","obs":"deve a Caixa não financia","sit":"em_conversa","sitAt":"2025-04-30","cobrarEm":"2025-05-02","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2038,"nome":"Hiego Vevyllin Silva Fernandes","cpf":"060.167.361-12","corretor":"Lucas","valor":1200,"classe":"ruim","data":"2025-04-30","obs":"mais de R$ 1.200,00 em divida","sit":"em_conversa","sitAt":"2025-04-30","cobrarEm":"2025-05-02","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2039,"nome":"Taires Celestina Da Silva","cpf":"707.437.176-94","corretor":"Lucas","valor":145,"classe":"bom","data":"2025-04-30","obs":"R$ 145,00 em divida","sit":"em_conversa","sitAt":"2025-04-30","cobrarEm":"2025-05-02","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2040,"nome":"Debora Rocha Barbosa","cpf":"076.188.261-88","corretor":"Lucas","valor":0,"classe":"otimo","data":"2025-04-30","obs":"sem informação de restrição","sit":"em_conversa","sitAt":"2025-04-30","cobrarEm":"2025-05-02","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2041,"nome":"Eliane Da Silva Santos Magalhães","cpf":"026.225.141-82","corretor":"Thaiany","valor":19000,"classe":"ruim","data":"2025-04-30","obs":"mais de R$ 19.000,00 em divida","sit":"em_conversa","sitAt":"2025-04-30","cobrarEm":"2025-05-02","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2042,"nome":"Paulo Henrique Borges Souza","cpf":"059.612.411-22","corretor":"Thaiany","valor":150000,"classe":"ruim","data":"2025-04-30","obs":"R$ 150.000,00 em divida","sit":"em_conversa","sitAt":"2025-04-30","cobrarEm":"2025-05-02","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2043,"nome":"Kethiny Ramos De França","cpf":"086.924.071-43","corretor":"Thaiany","valor":5000,"classe":"ruim","data":"2025-04-30","obs":"mais de R$ 5.000,00 em divida","sit":"em_conversa","sitAt":"2025-04-30","cobrarEm":"2025-05-02","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2044,"nome":"Luis Eduardo Marcano Velasques","cpf":"018.883.072-34","corretor":"Thaiany","valor":1300,"classe":"ruim","data":"2025-04-30","obs":"mais de R$ 1.300,00 em divida","sit":"em_conversa","sitAt":"2025-04-30","cobrarEm":"2025-05-02","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2045,"nome":"Andilza Anunciação Da Silva","cpf":"818.949.371-04","corretor":"Thaiany","valor":0,"classe":"ruim","data":"2025-04-30","obs":"deve a Caixa não financia","sit":"em_conversa","sitAt":"2025-04-30","cobrarEm":"2025-05-02","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2046,"nome":"Alesandro Almeida Da Silva","cpf":"009.639.551-60","corretor":"Thaiany","valor":300,"classe":"bom","data":"2025-04-30","obs":"mais de R$ 300,00 em divida","sit":"em_conversa","sitAt":"2025-04-30","cobrarEm":"2025-05-02","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2047,"nome":"Vanessa Garibaldi","cpf":"028.103.981-00","corretor":"Thaiany","valor":2000,"classe":"ruim","data":"2025-04-30","obs":"mais de R$ 2.000,00 em divida","sit":"em_conversa","sitAt":"2025-04-30","cobrarEm":"2025-05-02","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2048,"nome":"Ronaldo Franca De Barros","cpf":"000.874.641-95","corretor":"Thaiany","valor":5000,"classe":"ruim","data":"2025-04-30","obs":"mais de R$ 5.000,00 em divida","sit":"em_conversa","sitAt":"2025-04-30","cobrarEm":"2025-05-02","proxMes":false,"reconsultar":false,"dupDe":null},{"id":2049,"nome":"Michel Santos Silva","cpf":"072.197.751-05","corretor":"Thaiany","valor":0,"classe":"otimo","data":"2025-04-30","obs":"nome limpo","sit":"em_conversa","sitAt":"2025-04-30","cobrarEm":"2025-05-02","proxMes":false,"reconsultar":false,"dupDe":null}];
+
+let db=JSON.parse(localStorage.getItem('cpfg')||'null');
+if(!db){db={cors:[...CORS],cpfs:JSON.parse(JSON.stringify(SEED)),vend:[]};sv();}
+if(!db.vend)db.vend=[];
+CORS.forEach(c=>{if(!db.cors.includes(c))db.cors.push(c);});
+db.cors.sort((a,b)=>a.localeCompare(b,'pt-BR'));
+db.cpfs.forEach(c=>{
+  if(!c.sit)c.sit='em_conversa';
+  if(!c.sitAt)c.sitAt=c.data||hj();
+  if(!c.cobrarEm&&c.classe!=='ruim')c.cobrarEm=pduA(c.data||hj(),1);
+  if(c.proxMes===undefined)c.proxMes=false;
+  if(c.reconsultar===undefined)c.reconsultar=false;
+  if(!c.nome)c.nome='';
+  if(c.dupDe===undefined)c.dupDe=null;
+  if(c.cobrado===undefined)c.cobrado=false;
+  if(c.inativo4d===undefined)c.inativo4d=false;
+  if(!c.cobrarEmOriginal&&c.cobrarEm)c.cobrarEmOriginal=c.cobrarEm;
+});
+sv();
+
+function sv(){localStorage.setItem('cpfg',JSON.stringify(db));}
+const hj=()=>new Date().toISOString().slice(0,10);
+const dDe=d=>Math.max(0,Math.floor((new Date(hj())-new Date(d))/(864e5)));
+const fD=d=>{if(!d)return'—';const[y,m,dd]=d.split('-');return`${dd}/${m}/${y}`;}
+const fV=v=>v===0?'<span style="color:#4ade80">Limpo</span>':'R$\u00a0'+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const ini=n=>n.split(' ').map(p=>p[0]).slice(0,2).join('').toUpperCase();
+const clf=(v,cx)=>cx?'ruim':v===0?'otimo':v<=1000?'bom':'ruim';
+const rnc=i=>i===0?'r1':i===1?'r2':i===2?'r3':'rx';
+const SL={em_conversa:'Em conversa',pasta:'Pasta',aprovado:'Aprovado',condicionado:'Condicionado',reprovado:'Reprovado',perdido:'Perdido',vendido:'Vendido'};
+const SC={em_conversa:'sc',pasta:'sp',aprovado:'sa',condicionado:'sco',reprovado:'sr',perdido:'spe',vendido:'sv'};
+function cB(c){return({otimo:'<span class="badge bo">Ótimo</span>',bom:'<span class="badge bb">Bom</span>',ruim:'<span class="badge br">Ruim</span>'})[c]||'';}
+function sB(c){
+  if(c.reconsultar)return'<span class="badge srec">\uD83D\uDD01 Reconsultar</span>';
+  const pin=(c.sit==='aprovado'||c.sit==='condicionado')&&!c.proxMes?'\uD83D\uDCCC ':' ';
+  const pm=c.proxMes?'<span class="dbadge">próx.mês</span>':'';
+  return`<span class="badge ${SC[c.sit]||'sc'}">${pin}${SL[c.sit]||c.sit}</span>${pm}`;
+}
+function dTopo(c){
+  if(!((c.sit==='aprovado'||c.sit==='condicionado')&&!c.proxMes))return'';
+  return`<span class="dbadge">${Math.max(0,5-dDe(c.sitAt))}d</span>`;
+}
+function dupB(c){return c.dupDe?`<span class="badge sdup">\u26A0\uFE0F ${c.dupDe}</span>`:''; }
+function rCls(c){
+  if(c.reconsultar)return'rrec';
+  if(c.dupDe)return'rdup';
+  if((c.sit==='aprovado'||c.sit==='condicionado')&&!c.proxMes)return'rtop';
+  if(c.proxMes)return'rpm';
+  return'';
+}
+function sSel(id,sit){
+  return`<select class="ist" onchange="setSit(${id},this.value)">${['em_conversa','pasta','aprovado','condicionado','reprovado','perdido','vendido'].map(s=>`<option value="${s}"${sit===s?' selected':''}>${SL[s]}</option>`).join('')}</select>`;
+}
+function deveAp(c){
+  const h=hj();
+  if(c.classe==='ruim')return false;
+  if(c.cobrado&&c.cobrarEm>h)return false;
+  if(c.inativo4d&&c.cobrarEm>h)return false;
+  return c.cobrarEm&&c.cobrarEm<=h;
+}
+function sL1(a){const o={otimo:0,bom:1,ruim:2};return[...a].sort((x,y)=>(o[x.classe]||0)-(o[y.classe]||0)||new Date(x.data)-new Date(y.data));}
+function sPri(c){if(c.reconsultar)return 0;const b={em_conversa:10,pasta:20,aprovado:30,condicionado:40,reprovado:50,perdido:60};let p=b[c.sit]||70;if((c.sit==='aprovado'||c.sit==='condicionado')&&c.proxMes)p+=5;return p;}
+function sL2(a){return[...a].sort((x,y)=>(sPri(x)-sPri(y))||new Date(x.sitAt)-new Date(y.sitAt));}
+function normCpf(s){let d=String(s||'').replace(/\D/g,'');if(d.length===10)d='0'+d;if(d.length===11)return`${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`;return String(s||'').trim();}
+function cpfEx(cpf,excId=null){const n=cpf.replace(/\D/g,'');if(!n)return null;return db.cpfs.find(c=>c.cpf.replace(/\D/g,'')===n&&c.id!==excId)||null;}
+
+function autoRules(){
+  const h=hj();
+  db.cpfs.forEach(c=>{
+    const dias=dDe(c.sitAt);
+    if((c.sit==='aprovado'||c.sit==='condicionado')&&!c.proxMes&&dias>5){c.proxMes=true;c.cobrarEm=ipm(h);}
+    if(c.sit==='reprovado'&&!c.reconsultar&&dias>=60){c.reconsultar=true;c.cobrarEm=ipm(h);}
+    if(c.classe!=='ruim'&&!c.cobrado&&!c.inativo4d&&c.cobrarEm&&c.cobrarEm<=h&&dDe(c.sitAt)>=4){c.inativo4d=true;c.cobrarEm=ipm(h);}
+    if(c.inativo4d&&c.cobrarEm&&c.cobrarEm<=h){c.inativo4d=false;}
+    if(c.cobrado&&c.cobrarEm&&c.cobrarEm<=h){c.cobrado=false;}
+  });
+  sv();
+}
+
+let fMet=null,fSit='',fBusca='';
+function apF(lst){
+  let r=[...lst];
+  if(fMet==='otimo')r=r.filter(c=>c.classe==='otimo');
+  else if(fMet==='bom')r=r.filter(c=>c.classe==='bom');
+  else if(fMet==='ruim')r=r.filter(c=>c.classe==='ruim');
+  else if(fMet==='topo')r=r.filter(c=>(c.sit==='aprovado'||c.sit==='condicionado')&&!c.proxMes);
+  else if(fMet==='recon')r=r.filter(c=>c.reconsultar);
+  else if(fMet==='cobrar')r=r.filter(c=>deveAp(c));
+  else if(fMet==='dup')r=r.filter(c=>c.dupDe);
+  if(fSit)r=r.filter(c=>c.sit===fSit||(fSit==='recon'&&c.reconsultar));
+  if(fBusca){const b=fBusca.toLowerCase();r=r.filter(c=>(c.nome||'').toLowerCase().includes(b)||c.cpf.includes(b));}
+  return r;
+}
+function fBar(tot,fil){
+  const sits=[{v:'',l:'Todos'},{v:'em_conversa',l:'Em conversa'},{v:'pasta',l:'Pasta'},{v:'aprovado',l:'Aprovado'},{v:'condicionado',l:'Condicionado'},{v:'recon',l:'Reconsultar'},{v:'reprovado',l:'Reprovado'}];
+  return`<div class="fbar">${sits.map(s=>`<button class="chip${fSit===s.v?' on':''}" onclick="setFS('${s.v}')">${s.l}</button>`).join('')}
+    <input type="text" placeholder="Buscar nome ou CPF" value="${fBusca}" oninput="setFB(this.value)" style="margin-left:auto;width:155px;">
+    ${fMet||fSit||fBusca?'<button class="btn" onclick="limF()" style="padding:4px 10px;font-size:11px;">X Limpar</button>':''}
+    ${fil<tot?`<span style="font-size:11px;color:#999;">${fil}/${tot}</span>`:''}
+  </div>`;
+}
+function setFS(v){fSit=v;rCorp();}
+function setFB(v){fBusca=v;rCorp();}
+function limF(){fMet=null;fSit='';fBusca='';rCorp();}
+function setFM(v){fMet=fMet===v?null:v;fSit='';fBusca='';rCorp();}
+
+const PAGS=['home','cor','vend','imp','cfg'];
+const PNMS=['Visao geral','Corretores','Vendidos','Importar Excel','Configuracoes'];
+let curPg='home',curCor='',curSub='cobrar';
+
+function nav(p,cor,sub){
+  autoRules();curPg=p;
+  if(cor!==undefined){curCor=cor;fMet=null;fSit='';fBusca='';}
+  if(sub!==undefined)curSub=sub;
+  PAGS.forEach(x=>document.getElementById('pg-'+x).classList.toggle('on',x===p));
+  document.getElementById('nav').innerHTML=PAGS.map((x,i)=>`<button class="nb${x===p?' on':''}" onclick="nav('${x}')">${PNMS[i]}</button>`).join('');
+  ({home:rHome,cor:rCorp,vend:rVend,imp:rImp,cfg:rCfg})[p]?.();
+}
+
+function rHome(){
+  const el=document.getElementById('pg-home');
+  const h=hj(),cpfs=db.cpfs;
+  const ot=cpfs.filter(c=>c.classe==='otimo').length;
+  const bm=cpfs.filter(c=>c.classe==='bom').length;
+  const ru=cpfs.filter(c=>c.classe==='ruim').length;
+  const topo=cpfs.filter(c=>(c.sit==='aprovado'||c.sit==='condicionado')&&!c.proxMes).length;
+  const recon=cpfs.filter(c=>c.reconsultar).length;
+  const cobh=cpfs.filter(c=>deveAp(c)).length;
+  const dups=cpfs.filter(c=>c.dupDe).length;
+  const stats=[...db.cors].map(c=>{const l=cpfs.filter(x=>x.corretor===c);return{nome:c,tot:l.length,topo:l.filter(x=>(x.sit==='aprovado'||x.sit==='condicionado')&&!x.proxMes).length,recon:l.filter(x=>x.reconsultar).length,dups:l.filter(x=>x.dupDe).length};});
+  el.innerHTML=`
+    <div class="metrics">
+      <div class="mc" onclick="nav('cor','')"><div class="ml">Total</div><div class="mv">${cpfs.length}</div></div>
+      <div class="mc${fMet==='otimo'?' ativo':''}" onclick="nav('cor','','lista1');fMet='otimo'"><div class="ml">Otimos</div><div class="mv" style="color:#4ade80">${ot}</div></div>
+      <div class="mc${fMet==='bom'?' ativo':''}" onclick="nav('cor','','lista1');fMet='bom'"><div class="ml">Bons</div><div class="mv" style="color:#60a5fa">${bm}</div></div>
+      <div class="mc${fMet==='ruim'?' ativo':''}" onclick="nav('cor','','lista1');fMet='ruim'"><div class="ml">Ruins</div><div class="mv" style="color:#f87171">${ru}</div></div>
+      <div class="mc${fMet==='topo'?' ativo':''}" onclick="nav('cor','','lista2');fMet='topo'"><div class="ml">Topo</div><div class="mv" style="color:#fbbf24">${topo}</div></div>
+      <div class="mc${fMet==='recon'?' ativo':''}" onclick="nav('cor','','lista2');fMet='recon'"><div class="ml">Recons.</div><div class="mv" style="color:#f87171">${recon}</div></div>
+      <div class="mc${fMet==='cobrar'?' ativo':''}" onclick="nav('cor','','cobrar');fMet='cobrar'"><div class="ml">Cobrar hoje</div><div class="mv" style="color:#fbbf24">${cobh}</div></div>
+      ${dups?`<div class="mc${fMet==='dup'?' ativo':''}" onclick="nav('cor','','lista1');fMet='dup'"><div class="ml">Duplicados</div><div class="mv" style="color:#fb923c">${dups}</div></div>`:''}
+      <div class="mc" onclick="nav('vend')"><div class="ml">Vendidos</div><div class="mv" style="color:#4ade80">${db.vend.length}</div></div>
+    </div>
+    <p class="stitle">Corretores</p>
+    <div class="cor-grid">${stats.map(s=>`<div class="cor-card" onclick="nav('cor','${s.nome}','cobrar')">
+      <span class="av">${ini(s.nome)}</span>
+      <div style="min-width:0;">
+        <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s.nome}</div>
+        <div style="font-size:11px;color:#999;margin-top:2px;">${s.tot} CPFs${s.topo?` - <span style="color:#4ade80">${s.topo} topo</span>`:''}${s.recon?` - <span style="color:#f87171">${s.recon} rec.</span>`:''}${s.dups?` - <span style="color:#fb923c">${s.dups} dup.</span>`:''}</div>
+      </div></div>`).join('')}</div>`;
+}
+
+function rCorp(){
+  const el=document.getElementById('pg-cor');
+  const c=curCor,h=hj(),m=h.slice(0,7);
+  const todos=c?db.cpfs.filter(x=>x.corretor===c):db.cpfs;
+  const doDia=todos.filter(x=>x.data===h);
+  const doMes=todos.filter(x=>x.data&&x.data.startsWith(m));
+  const ot=todos.filter(x=>x.classe==='otimo').length;
+  const bm=todos.filter(x=>x.classe==='bom').length;
+  const ru=todos.filter(x=>x.classe==='ruim').length;
+  const topo=todos.filter(x=>(x.sit==='aprovado'||x.sit==='condicionado')&&!x.proxMes).length;
+  const recon=todos.filter(x=>x.reconsultar).length;
+  const cobh=todos.filter(x=>deveAp(x)).length;
+  const sub=curSub;
+  const mkM=(lbl,val,cnt,col)=>`<div class="mc${fMet===val?' ativo':''}" onclick="setFM('${val}')"><div class="ml">${lbl}</div><div class="mv"${col?` style="color:${col};"`:''} >${cnt}</div></div>`;
+  el.innerHTML=`
+    <button class="back" onclick="nav('home')">&#8592; Voltar</button>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.25rem;">
+      <span class="av" style="width:38px;height:38px;font-size:14px;">${c?ini(c):'*'}</span>
+      <div>
+        <div style="font-size:16px;font-weight:700;">${c||'Todos os corretores'}</div>
+        <div style="font-size:11px;color:#999;">${todos.length} CPFs - ${doDia.length} hoje - ${doMes.length} este mes</div>
+      </div>
+      ${c?`<button class="btn" style="margin-left:auto;font-size:11px;" onclick="nav('cor','','${sub}')">Ver todos</button>`:''}
+    </div>
+    <div class="metrics">
+      ${mkM('Otimos','otimo',ot,'#4ade80')}
+      ${mkM('Bons','bom',bm,'#60a5fa')}
+      ${mkM('Ruins','ruim',ru,'#f87171')}
+      ${mkM('Topo','topo',topo,'#fbbf24')}
+      ${mkM('Recons.','recon',recon,'#f87171')}
+      ${mkM('Cobrar hoje','cobrar',cobh,'#fbbf24')}
+    </div>
+    <div class="subtabs">
+      <button class="st${sub==='cobrar'?' on':''}" onclick="setSub('cobrar')" style="${sub!=='cobrar'?'border-color:rgba(251,191,36,.4);color:#fbbf24;':''}">Cobrar hoje (${cobh})</button>
+      <button class="st${sub==='lista1'?' on':''}" onclick="setSub('lista1')">Lista CPFs</button>
+      <button class="st${sub==='lista2'?' on':''}" onclick="setSub('lista2')">Lista Geral</button>
+      <button class="st${sub==='hoje'?' on':''}" onclick="setSub('hoje')">Hoje (${doDia.length})</button>
+      <button class="st${sub==='mes'?' on':''}" onclick="setSub('mes')">Mes (${doMes.length})</button>
+    </div>
+    <div id="sub"></div>`;
+  const sc=document.getElementById('sub');
+  const base=sub==='hoje'?doDia:sub==='mes'?doMes:todos;
+  const fil=apF(base);
+  if(sub==='cobrar'){
+    const cobFil=apF(todos.filter(x=>deveAp(x)));
+    rCobHoje(sc,sL1(cobFil),todos.filter(x=>deveAp(x)).length,cobFil.length);
+  } else if(sub==='lista1'||sub==='hoje'||sub==='mes'){
+    rL1(sc,sL1(fil),base.length,fil.length);
+  } else {
+    rL2(sc,sL2(fil.filter(x=>x.sit!=='vendido')),base.length,fil.length);
+  }
+}
+
+function setSub(s){curSub=s;rCorp();}
+
+function cobCel(c){
+  const h=hj();
+  if(c.classe==='ruim')return'<span style="font-size:10px;color:#555;">--</span>';
+  const orig=c.cobrarEmOriginal||c.cobrarEm;
+  const chg=c.sitAt&&c.sitAt!==c.data&&c.cobrarEm&&c.cobrarEm!==orig;
+  const venc=d=>d&&d<=h;
+  const row=(icon,lbl,val)=>`<div class="cob-row"><span class="cob-icon">${icon}</span><span class="cob-label">${lbl}</span><span class="cob-val ${venc(val)?'cob-venc':'cob-ok'}">${fD(val)}</span></div>`;
+  let html=`<div class="cob-cell">${row('&#128197;','Inserido',c.data)}${row('&#128276;','Cobrar',orig)}`;
+  if(chg)html+=`<hr class="cdiv">${row('&#128260;','Pos sit.',c.cobrarEm)}`;
+  return html+'</div>';
+}
+
+function btnCob(c){
+  const h=hj();
+  if(c.classe==='ruim')return'';
+  if(c.cobrado)return`<div style="display:flex;flex-direction:column;gap:3px;">
+    <span class="badge sa" style="font-size:10px;">Ja cobrei</span>
+    <span style="font-size:10px;color:#555;">Volta ${fD(c.cobrarEm)}</span>
+    <button onclick="desCob(${c.id})" style="font-size:9px;background:none;border:none;color:#555;cursor:pointer;padding:0;text-decoration:underline;">desfazer</button>
+  </div>`;
+  if(c.inativo4d)return`<div><span class="badge" style="background:rgba(251,191,36,.1);color:#fbbf24;font-size:10px;">4 dias</span><div style="font-size:10px;color:#555;">Volta ${fD(c.cobrarEm)}</div></div>`;
+  return`<button onclick="abrirCob(${c.id})" style="padding:4px 8px;font-size:11px;border-radius:5px;border:1px solid rgba(74,222,128,.3);background:rgba(74,222,128,.08);color:#4ade80;cursor:pointer;">Ja cobrei</button>`;
+}
+
+function tabHTML(lst){
+  if(!lst.length)return'<div style="text-align:center;padding:1.5rem;color:#999;font-size:12px;">Nenhum CPF aqui.</div>';
+  return`<div class="card" style="overflow-x:auto;"><table style="min-width:980px;">
+    <thead><tr>
+      <th style="width:22px;">#</th><th style="width:130px;">Nome</th>
+      <th style="width:132px;">CPF</th><th style="width:105px;">Restricao</th>
+      <th style="width:58px;">Qual.</th><th style="width:145px;">Situacao</th>
+      <th style="width:115px;">Alterar</th><th style="width:110px;">Ja cobrei?</th>
+      <th>Obs</th><th style="width:115px;">Cobranca</th>
+    </tr></thead>
+    <tbody>${lst.map((c,i)=>`<tr class="${rCls(c)}${c.cobrado?' rpm':''}">
+      <td><span class="rn ${rnc(i)}">${i+1}</span></td>
+      <td style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;">${c.nome||'--'}</td>
+      <td class="cpfm">${c.cpf}</td>
+      <td style="font-size:11px;"><div style="display:flex;align-items:center;gap:4px;">${fV(c.valor)}<button onclick="editRes(${c.id})" style="background:none;border:none;cursor:pointer;color:#555;font-size:12px;padding:0 2px;">&#9998;</button></div></td>
+      <td>${cB(c.classe)}</td>
+      <td style="overflow:visible;white-space:normal;line-height:1.8;">${sB(c)}${dTopo(c)}${dupB(c)}</td>
+      <td>${sSel(c.id,c.sit)}</td>
+      <td style="overflow:visible;white-space:normal;">${btnCob(c)}</td>
+      <td style="color:#999;font-size:11px;overflow:hidden;text-overflow:ellipsis;">${c.obs||'--'}</td>
+      <td style="overflow:visible;white-space:normal;padding:6px 8px;">${cobCel(c)}</td>
+    </tr>`).join('')}</tbody></table></div>`;
+}
+
+function rCobHoje(el,lst,tot,fil){
+  const gN={otimo:'Otimos - nome limpo',bom:'Bons - restricao ate R$ 1.000'};
+  let h=fBar(tot,fil);
+  h+=`<div class="al aw">Cobrar hoje: <strong>${tot}</strong> CPF(s) - otimos e bons apenas</div>`;
+  const g={otimo:[],bom:[]};lst.forEach(c=>g[c.classe]?.push(c));
+  let ok=false;
+  ['otimo','bom'].forEach(k=>{if(!g[k].length)return;ok=true;h+=`<div class="sep">${gN[k]} (${g[k].length})</div>${tabHTML(g[k])}`});
+  if(!ok)h+='<div style="text-align:center;padding:2rem;color:#999;">Nenhum CPF para cobrar hoje!</div>';
+  el.innerHTML=h;
+}
+
+function rL1(el,lst,tot,fil){
+  const gN={otimo:'Otimos',bom:'Bons',ruim:'Ruins'};
+  let h=fBar(tot,fil);h+=`<div class="al ai">Todos os CPFs por qualificacao</div>`;
+  const g={otimo:[],bom:[],ruim:[]};lst.forEach(c=>g[c.classe]?.push(c));
+  let ok=false;
+  ['otimo','bom','ruim'].forEach(k=>{if(!g[k].length)return;ok=true;h+=`<div class="sep">${gN[k]} (${g[k].length})</div>${tabHTML(g[k])}`});
+  if(!ok)h+=tabHTML([]);
+  el.innerHTML=h;
+}
+
+function rL2(el,lst,tot,fil){
+  const gN={reconsultar:'Reconsultar',em_conversa:'Em conversa',pasta:'Pasta',aprovado:'Aprovado',condicionado:'Condicionado',reprovado:'Reprovado',perdido:'Perdido'};
+  let h=fBar(tot,fil);h+=`<div class="al ai">Todos os CPFs por situacao</div>`;
+  const rec=lst.filter(c=>c.reconsultar),rest=lst.filter(c=>!c.reconsultar);
+  let ok=false;
+  if(rec.length){ok=true;h+=`<div class="sep">${gN['reconsultar']} (${rec.length})</div>${tabHTML(rec)}`;}
+  ['em_conversa','pasta','aprovado','condicionado','reprovado','perdido'].forEach(g=>{
+    const l=rest.filter(c=>c.sit===g);if(!l.length)return;ok=true;
+    if(g==='aprovado'||g==='condicionado'){
+      const tp=l.filter(c=>!c.proxMes),pm=l.filter(c=>c.proxMes);
+      if(tp.length)h+=`<div class="sep">${gN[g]} no topo (${tp.length})</div>${tabHTML(tp)}`;
+      if(pm.length)h+=`<div class="sep">${gN[g]} prox.mes (${pm.length})</div>${tabHTML(pm)}`;
+    } else h+=`<div class="sep">${gN[g]} (${l.length})</div>${tabHTML(l)}`;
+  });
+  if(!ok)h+=tabHTML([]);
+  el.innerHTML=h;
+}
+
+function setSit(id,val){
+  const c=db.cpfs.find(x=>x.id===id);if(!c)return;
+  const h=hj();
+  if(val==='perdido'){db.cpfs=db.cpfs.filter(x=>x.id!==id);sv();rCorp();return;}
+  if(val==='vendido'){db.cpfs=db.cpfs.filter(x=>x.id!==id);db.vend.unshift({...c,sit:'vendido',vendidoEm:h});sv();rCorp();return;}
+  if(!c.cobrarEmOriginal)c.cobrarEmOriginal=c.cobrarEm||pduA(c.data,1);
+  c.sit=val;c.sitAt=h;c.proxMes=false;c.reconsultar=false;c.cobrado=false;c.inativo4d=false;
+  c.cobrarEm=c.classe==='ruim'?null:pduA(h,1);
+  sv();rCorp();
+}
+
+function abrirCob(id){
+  const c=db.cpfs.find(x=>x.id===id);if(!c)return;
+  const prox=pduA(hj(),1);
+  document.getElementById('mroot').innerHTML=`<div class="modal-bg" onclick="fMod()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <h3>Ja conversei com o corretor</h3>
+      <p><strong>${c.nome||c.cpf}</strong> - ${c.corretor}</p>
+      <p>Quando este CPF deve voltar para cobranca?</p>
+      <div class="fg" style="margin:1rem 0;">
+        <label>Proxima cobranca</label>
+        <input type="date" id="prox-d" value="${prox}">
+      </div>
+      <div class="btns">
+        <button class="btn" onclick="fMod()">Cancelar</button>
+        <button class="btn btnp" onclick="confCob(${id})">Confirmar</button>
+      </div>
+    </div></div>`;
+}
+function confCob(id){
+  const c=db.cpfs.find(x=>x.id===id);if(!c)return;
+  c.cobrado=true;c.cobrarEm=pdu(document.getElementById('prox-d').value||pduA(hj(),1));
+  sv();fMod();rCorp();
+}
+function desCob(id){const c=db.cpfs.find(x=>x.id===id);if(!c)return;c.cobrado=false;sv();rCorp();}
+
+function editRes(id){
+  const c=db.cpfs.find(x=>x.id===id);if(!c)return;
+  document.getElementById('mroot').innerHTML=`<div class="modal-bg" onclick="fMod()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <h3>Editar restricao</h3>
+      <p>${c.nome||c.cpf} - ${c.corretor}</p>
+      <div class="fg" style="margin:1rem 0;">
+        <label>Valor da restricao (0 = limpo)</label>
+        <input type="number" id="ev" value="${c.valor}" min="0">
+      </div>
+      <div class="fg" style="margin-bottom:1rem;">
+        <label>Caixa (nao financia)?</label>
+        <select id="ecx"><option value="n"${!c.caixa?' selected':''}>Nao</option><option value="s"${c.caixa?' selected':''}>Sim - Ruim</option></select>
+      </div>
+      <div class="btns">
+        <button class="btn" onclick="fMod()">Cancelar</button>
+        <button class="btn btnp" onclick="salvRes(${id})">Salvar</button>
+      </div>
+    </div></div>`;
+}
+function salvRes(id){
+  const c=db.cpfs.find(x=>x.id===id);if(!c)return;
+  const v=parseFloat(document.getElementById('ev').value||'0');
+  const cx=document.getElementById('ecx').value==='s';
+  c.valor=isNaN(v)?0:v;c.caixa=cx;c.classe=clf(c.valor,cx);
+  if(c.classe==='ruim'){c.cobrarEm=null;c.cobrarEmOriginal=null;}
+  sv();fMod();rCorp();
+}
+
+let _pend=null;
+function showMod(novo,ex){
+  _pend=novo;
+  document.getElementById('mroot').innerHTML=`<div class="modal-bg" onclick="fMod()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <h3>CPF ja consultado</h3>
+      <p>CPF <strong>${novo.cpf}</strong> ja esta com <strong>${ex.corretor}</strong> - ${ex.nome||'sem nome'} - situacao: ${SL[ex.sit]||ex.sit}</p>
+      <div class="btns">
+        <button class="btn" onclick="fMod()">Cancelar</button>
+        <button class="btn" onclick="manterDois()">Manter os dois</button>
+        <button class="btn btnp" onclick="subs(${ex.id})">Substituir anterior</button>
+      </div>
+    </div></div>`;
+}
+function fMod(){document.getElementById('mroot').innerHTML='';_pend=null;}
+function manterDois(){
+  if(!_pend)return;
+  const ex=cpfEx(_pend.cpf,_pend.id);
+  if(ex){_pend.dupDe=ex.corretor;ex.dupDe=_pend.corretor;}
+  db.cpfs.push(_pend);sv();fMod();finSalvar();
+}
+function subs(idA){
+  if(!_pend)return;
+  db.cpfs=db.cpfs.filter(x=>x.id!==idA);
+  db.cpfs.push(_pend);sv();fMod();finSalvar();
+}
+function finSalvar(){
+  const m=document.getElementById('msg');
+  if(m)m.innerHTML='<div class="al ag">Registrado!</div>';
+  ['mn','mcp','mv','mob'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  setTimeout(()=>{const m=document.getElementById('msg');if(m)m.innerHTML='';},2500);
+}
+
+function rVend(){
+  const el=document.getElementById('pg-vend');
+  const v=db.vend;
+  const cors=[...new Set(v.map(x=>x.corretor))];
+  el.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:1.25rem;">
+    <p class="stitle" style="margin:0;">Vendidos - ${v.length} contrato(s)</p>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      ${cors.map(c=>`<button class="chip" onclick="rVL('${c}')">${c.split(' ')[0]}: ${v.filter(x=>x.corretor===c).length}</button>`).join('')}
+      ${cors.length?`<button class="chip" onclick="rVL('')">Todos</button>`:''}
+    </div></div>
+  <div id="vl"></div>`;
+  rVL('');
+}
+function rVL(c){
+  const el=document.getElementById('vl');if(!el)return;
+  const v=c?db.vend.filter(x=>x.corretor===c):db.vend;
+  if(!v.length){el.innerHTML='<div style="text-align:center;padding:3rem;color:#999;">Nenhum contrato ainda.</div>';return;}
+  el.innerHTML=`<div class="card"><table>
+    <thead><tr><th style="width:22px;">#</th><th style="width:130px;">Nome</th><th style="width:132px;">CPF</th><th>Corretor</th><th style="width:90px;">Restricao</th><th style="width:58px;">Qual.</th><th style="width:78px;">Vendido em</th></tr></thead>
+    <tbody>${v.map((c,i)=>`<tr><td><span class="rn ${rnc(i)}">${i+1}</span></td>
+      <td style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;">${c.nome||'--'}</td>
+      <td class="cpfm">${c.cpf}</td><td style="font-size:12px;">${c.corretor}</td>
+      <td style="font-size:11px;">${fV(c.valor)}</td><td>${cB(c.classe)}</td>
+      <td style="font-size:11px;color:#999;">${fD(c.vendidoEm)}</td></tr>`).join('')}
+    </tbody></table></div>`;
+}
+
+function rImp(){
+  const el=document.getElementById('pg-imp');
+  el.innerHTML=`
+    <div class="card cp">
+      <p class="stitle">Importar planilha Excel</p>
+      <p style="font-size:12px;color:#999;margin-bottom:.75rem;">Formato: corretores em colunas, cada bloco com Nome | CPF | Observacao</p>
+      <div class="drop" onclick="document.getElementById('xi').click()">
+        <input type="file" id="xi" accept=".xlsx,.xls" style="display:none;" onchange="hXLS(this)">
+        <p style="font-size:22px;margin-bottom:6px;">&#128194;</p>
+        <p style="font-size:13px;color:#999;">Clique para selecionar o arquivo Excel (.xlsx)</p>
+        <p style="font-size:11px;color:#555;margin-top:4px;">Cadastrado hoje - cobranca amanha (proximo dia util)</p>
+      </div>
+      <div id="pst" style="margin-top:10px;"></div>
+      <div id="ppv" style="margin-top:10px;"></div>
+    </div>
+    <div class="card cp" style="margin-top:0;">
+      <p class="stitle">Cadastro manual</p>
+      <div class="frow">
+        <div class="fg"><label>Corretor</label><select id="mc">${db.cors.map(c=>`<option>${c}</option>`).join('')}</select></div>
+        <div class="fg"><label>Data</label><input type="date" id="mdt" value="${hj()}"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Nome completo</label><input type="text" id="mn" placeholder="Nome do lead"></div>
+        <div class="fg"><label>CPF</label><input type="text" id="mcp" placeholder="000.000.000-00" maxlength="14" oninput="msk(this);chkD(this.value)"></div>
+      </div>
+      <div id="dw" style="margin-bottom:8px;"></div>
+      <div class="frow">
+        <div class="fg"><label>Valor restricao (0=limpo)</label><input type="number" id="mv" placeholder="0" min="0"></div>
+        <div class="fg"><label>Caixa?</label><select id="mcx"><option value="n">Nao</option><option value="s">Sim</option></select></div>
+      </div>
+      <div class="fg" style="margin-bottom:10px;"><label>Obs</label><input type="text" id="mob" placeholder="Opcional"></div>
+      <div style="display:flex;justify-content:flex-end;"><button class="btn btnp" onclick="salvar()">Registrar</button></div>
+      <div id="msg" style="margin-top:8px;"></div>
+    </div>`;
+}
+
+function msk(el){let v=el.value.replace(/\D/g,'');if(v.length>3)v=v.slice(0,3)+'.'+v.slice(3);if(v.length>7)v=v.slice(0,7)+'.'+v.slice(7);if(v.length>11)v=v.slice(0,11)+'-'+v.slice(11);el.value=v.slice(0,14);}
+function chkD(val){const w=document.getElementById('dw');if(!w)return;const ex=cpfEx(val);if(ex)w.innerHTML=`<div class="al adup">CPF ja consultado por <strong>${ex.corretor}</strong> - ${ex.nome||'sem nome'} - situacao: ${SL[ex.sit]||ex.sit}</div>`;else w.innerHTML='';}
+
+function salvar(){
+  const cor=document.getElementById('mc').value,nome=document.getElementById('mn').value.trim();
+  if(!cor||!nome){document.getElementById('msg').innerHTML='<div class="al aw">Nome e corretor obrigatorios.</div>';return;}
+  const v=parseFloat(document.getElementById('mv').value||'0'),cx=document.getElementById('mcx').value==='s',h=hj();
+  const dt=document.getElementById('mdt').value||h,classe=clf(isNaN(v)?0:v,cx);
+  const cobr=classe==='ruim'?null:pduA(h,1);
+  const novo={id:Date.now(),nome,cpf:document.getElementById('mcp').value.trim(),corretor:cor,valor:isNaN(v)?0:v,classe,data:dt,obs:document.getElementById('mob').value.trim(),sit:'em_conversa',sitAt:h,cobrarEm:cobr,cobrarEmOriginal:cobr,proxMes:false,reconsultar:false,dupDe:null,cobrado:false,inativo4d:false};
+  const ex=cpfEx(novo.cpf);
+  if(ex&&ex.corretor!==cor){showMod(novo,ex);return;}
+  db.cpfs.push(novo);sv();finSalvar();
+}
+
+async function hXLS(inp){
+  const file=inp.files[0];if(!file)return;
+  const st=document.getElementById('pst');
+  st.innerHTML='<div class="al aw">Lendo planilha...</div>';
+  try{
+    if(typeof XLSX==='undefined'){st.innerHTML='<div class="al ae">Biblioteca Excel nao carregou. Verifique sua conexao com a internet.</div>';return;}
+    const ab=await file.arrayBuffer();
+    const wb=XLSX.read(ab,{type:'array'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
+    parseXLS(rows,st);
+  }catch(e){
+    st.innerHTML=`<div class="al ae">Erro: ${e.message||'verifique o arquivo .xlsx'}.</div>`;
+  }
+  inp.value='';
+}
+
+function parseXLS(rows,stEl){
+  const hoje=hj(),cobr=pduA(hoje,1);
+  const noms=db.cors.map(c=>c.toLowerCase().trim());
+  const regs=[],dups=[];
+  let baseCols=[];
+  for(let ri=0;ri<Math.min(8,rows.length);ri++){
+    const row=rows[ri],found=[];
+    for(let ci=0;ci<(row.length||0);ci++){
+      const v=String(row[ci]||'').trim().toLowerCase();
+      if(v&&noms.includes(v))found.push(ci);
+    }
+    if(found.length>=1){baseCols=found;break;}
+  }
+  if(!baseCols.length)baseCols=[0,5,10];
+  const blocos=baseCols.map(bc=>({bc,bn:bc+1,bcp:bc+2,bo:bc+3}));
+  const corAt={};blocos.forEach(b=>corAt[b.bc]=null);
+  rows.forEach(row=>{
+    blocos.forEach(({bc,bn,bcp,bo})=>{
+      const v0=String(row[bc]||'').trim();
+      const idx=noms.findIndex(n=>v0.toLowerCase().trim()===n);
+      if(idx>=0){corAt[bc]=db.cors[idx];return;}
+      const cor=corAt[bc];if(!cor)return;
+      const nR=String(row[bn]||'').trim(),cpfR=row[bcp],obsR=String(row[bo]||'').trim();
+      const cpf=normCpf(cpfR);
+      const nome=(nR.length>1&&!/^\d+$/.test(nR))?nR:'';
+      if(!cpf&&!nome)return;
+      const cx=/caixa/i.test(obsR);
+      let val=0;
+      const vm=obsR.match(/r\$\s*([\d.,]+)/i)||obsR.match(/(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{1,2})?)/);
+      if(vm&&!cx){const vs=vm[1].replace(/\./g,'').replace(',','.');const p=parseFloat(vs);if(!isNaN(p)&&p<10000000)val=p;}
+      if(/limpo|lempo|sem\s*restri/i.test(obsR)||(!vm&&!cx))val=0;
+      const classe=clf(val,cx);
+      const cobFinal=classe==='ruim'?null:cobr;
+      const novo={id:Date.now()+Math.random(),nome:nome?nome.replace(/\b\w/g,l=>l.toUpperCase()):'',cpf,corretor:cor,valor:val,classe,data:hoje,obs:obsR,sit:'em_conversa',sitAt:hoje,cobrarEm:cobFinal,cobrarEmOriginal:cobFinal,proxMes:false,reconsultar:false,dupDe:null,cobrado:false,inativo4d:false};
+      const ex=cpfEx(cpf);
+      if(ex&&ex.corretor!==cor){novo.dupDe=ex.corretor;dups.push({novo:nome||cpf,corNovo:cor,corAnt:ex.corretor});}
+      regs.push(novo);
+    });
+  });
+  const pv=document.getElementById('ppv');
+  if(!regs.length){stEl.innerHTML=`<div class="al ae">Nenhum lead detectado.<br><span style="font-size:11px;">Corretores esperados: <strong>${db.cors.join(', ')}</strong></span></div>`;return;}
+  const porCor={};regs.forEach(r=>{if(!porCor[r.corretor])porCor[r.corretor]=[];porCor[r.corretor].push(r);});
+  stEl.innerHTML=`<div class="al ag">${regs.length} lead(s) - cadastrado ${fD(hoje)} - cobrar ${fD(cobr)}</div>${dups.length?`<div class="al adup">${dups.length} duplicado(s): ${dups.map(d=>`<strong>${d.novo}</strong> (${d.corNovo} x ${d.corAnt})`).join(', ')}</div>`:''}`;
+  let t='';
+  Object.entries(porCor).forEach(([cor,lst])=>{t+=`<div class="sep" style="margin-top:1rem;">${cor} - ${lst.length}</div><div class="card"><table><thead><tr><th>Nome</th><th style="width:132px;">CPF</th><th style="width:90px;">Restricao</th><th style="width:58px;">Qual.</th></tr></thead><tbody>${lst.map(r=>`<tr${r.dupDe?' class="rdup"':''}><td style="font-size:12px;font-weight:600;">${r.nome||'--'}</td><td class="cpfm" style="overflow:visible;">${r.cpf||'--'}</td><td style="font-size:11px;">${fV(r.valor)}</td><td>${cB(r.classe)}</td></tr>`).join('')}</tbody></table></div>`;});
+  pv.innerHTML=t+`<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px;">
+    <button class="btn" onclick="document.getElementById('ppv').innerHTML='';document.getElementById('pst').innerHTML='';">Cancelar</button>
+    <button class="btn btnp" onclick="confXLS(${encodeURIComponent(JSON.stringify(regs))})">Confirmar</button>
+  </div>`;
+}
+function confXLS(enc){db.cpfs.push(...JSON.parse(decodeURIComponent(enc)));sv();document.getElementById('pst').innerHTML='<div class="al ag">Importado!</div>';document.getElementById('ppv').innerHTML='';nav('home');}
+
+let confSenhaOk=false;
+function rCfg(){
+  const el=document.getElementById('pg-cfg'),h=hj();
+  el.innerHTML=`
+    <div class="card cp" style="border:1px solid rgba(251,191,36,.3);margin-bottom:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <div><p style="font-size:14px;font-weight:700;color:#fbbf24;">Atualizacao de sistema</p>
+        <p style="font-size:12px;color:#999;margin-top:3px;">Siga o passo a passo para atualizar sem perder seus dados</p></div>
+        ${confSenhaOk?`<span style="font-size:12px;color:#fbbf24;">Desbloqueado</span>`:`<div style="display:flex;gap:8px;align-items:center;">
+          <input type="password" id="inp-senha" placeholder="Senha" maxlength="10" style="width:100px;padding:7px 10px;font-size:13px;border:1px solid #3a3a3a;border-radius:5px;background:#222;color:#f0f0f0;" onkeydown="if(event.key==='Enter')chkS()">
+          <button class="btn btnp" onclick="chkS()">Entrar</button></div>`}
+      </div>
+      ${confSenhaOk?painelAtual():''}
+    </div>
+    <div class="card cp">
+      <p class="stitle">Corretores</p>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <input type="text" id="nci" placeholder="Nome do corretor" style="flex:1;padding:8px 10px;font-size:13px;border:1px solid #3a3a3a;border-radius:5px;background:#222;color:#f0f0f0;">
+        <button class="btn btnp" onclick="addCor()">Adicionar</button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">${db.cors.map(c=>`<div style="display:flex;align-items:center;gap:6px;background:#222;border:1px solid #2e2e2e;border-radius:5px;padding:5px 12px;font-size:13px;">${c}<button onclick="remCor('${c}')" style="background:none;border:none;cursor:pointer;color:#999;font-size:15px;line-height:1;padding:0 2px;">&times;</button></div>`).join('')}</div>
+    </div>
+    <div class="card cp" style="margin-top:0;">
+      <p class="stitle">Proximos dias uteis</p>
+      <p style="font-size:12px;color:#999;">Amanha: <strong style="color:#f0f0f0;">${fD(pduA(h,1))}</strong> &nbsp;-&nbsp; 1o dia util prox. mes: <strong style="color:#f0f0f0;">${fD(ipm(h))}</strong></p>
+      <p style="font-size:11px;color:#555;margin-top:6px;">Feriados: nacionais + Cuiaba + Varzea Grande + Carnaval/Pascoa/Corpus Christi moveis</p>
+    </div>
+    <div class="card cp" style="margin-top:0;">
+      <p class="stitle">Dados</p>
+      <button class="btn" style="color:#f87171;border-color:rgba(248,113,113,.3);padding:7px 14px;" onclick="rst()">Limpar tudo</button>
+    </div>`;
+}
+
+function painelAtual(){
+  return`<div style="margin-top:1rem;border-top:1px solid #2e2e2e;padding-top:1rem;">
+    <p style="font-size:12px;font-weight:700;margin-bottom:12px;">Como atualizar sem perder dados:</p>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:1.25rem;">
+      ${['1 - <strong>Exporte</strong> seus dados abaixo (arquivo .json)',
+         '2 - <strong>Peca a atualizacao</strong> no Claude.ai',
+         '3 - <strong>Baixe o novo arquivo</strong> gestao_cpf.html',
+         '4 - <strong>Abra o novo arquivo</strong> no navegador',
+         '5 - <strong>Importe</strong> o .json em Configuracoes > Atualizacao > Importar',
+         'Pronto! Todos os dados de volta.']
+        .map(p=>`<div style="font-size:12px;color:#999;background:#222;padding:8px 12px;border-radius:5px;">${p}</div>`).join('')}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div style="background:#222;border:1px solid #2e2e2e;border-radius:8px;padding:1rem;text-align:center;">
+        <p style="font-size:22px;margin-bottom:6px;">&#11015;&#65039;</p>
+        <p style="font-size:13px;font-weight:700;margin-bottom:4px;">Exportar dados</p>
+        <p style="font-size:11px;color:#999;margin-bottom:10px;">Salva backup com todos os CPFs</p>
+        <button class="btn btnp" style="width:100%;" onclick="exp()">Baixar backup (.json)</button>
+      </div>
+      <div style="background:#222;border:1px solid #2e2e2e;border-radius:8px;padding:1rem;text-align:center;">
+        <p style="font-size:22px;margin-bottom:6px;">&#11014;&#65039;</p>
+        <p style="font-size:13px;font-weight:700;margin-bottom:4px;">Importar dados</p>
+        <p style="font-size:11px;color:#999;margin-bottom:10px;">Carrega backup no sistema novo</p>
+        <button class="btn" style="width:100%;border-color:#fbbf24;color:#fbbf24;" onclick="document.getElementById('imp-j').click()">Carregar backup (.json)</button>
+        <input type="file" id="imp-j" accept=".json" style="display:none;" onchange="impJ(this)">
+      </div>
+    </div>
+    <div id="imp-msg" style="margin-top:10px;"></div>
+    <p style="font-size:10px;color:#555;margin-top:12px;text-align:right;">Versao: v11</p>
+  </div>`;
+}
+
+function chkS(){
+  const v=(document.getElementById('inp-senha')||{}).value;
+  if(v==='537474'){confSenhaOk=true;rCfg();}
+  else{const e=document.getElementById('inp-senha');if(e){e.style.borderColor='#f87171';e.value='';e.placeholder='Senha incorreta';}}
+}
+
+function impJ(inp){
+  const file=inp.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const d=JSON.parse(e.target.result);
+      if(!d.cors&&!d.corretores)throw new Error('Formato invalido');
+      if(d.corretores&&!d.cors)d.cors=d.corretores;
+      if(d.vendidos&&!d.vend)d.vend=d.vendidos;
+      db=d;if(!db.vend)db.vend=[];sv();
+      document.getElementById('imp-msg').innerHTML=`<div class="al ag">${db.cpfs.length} CPFs carregados!</div>`;
+      setTimeout(()=>nav('home'),1500);
+    }catch(err){document.getElementById('imp-msg').innerHTML='<div class="al ae">Arquivo invalido.</div>';}
+  };
+  r.readAsText(file);inp.value='';
+}
+
+function addCor(){const n=(document.getElementById('nci')||{}).value?.trim();if(!n||db.cors.includes(n))return;db.cors.push(n);db.cors.sort((a,b)=>a.localeCompare(b,'pt-BR'));sv();rCfg();}
+function remCor(n){if(db.cpfs.some(c=>c.corretor===n)){alert('Corretor tem CPFs.');return;}db.cors=db.cors.filter(c=>c!==n);sv();rCfg();}
+function exp(){const b=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='backup_cpf_'+hj()+'.json';a.click();}
+function rst(){if(!confirm('Apagar TODOS os dados?'))return;db={cors:[...db.cors],cpfs:[],vend:[]};sv();nav('home');}
+
+nav('home');
+
+</script>
+</body>
+</html>
